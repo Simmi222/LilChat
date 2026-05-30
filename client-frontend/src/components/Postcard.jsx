@@ -256,17 +256,32 @@ const Postcard = ({ post, onPostUpdate, onPostDeleted }) => {
             <div className={`grid gap-1.5 rounded-xl overflow-hidden ${isSingle ? 'grid-cols-1' : 'grid-cols-2'}`}>
               {urls.map((url, index) => {
                 const isVideo = url?.startsWith('data:video') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
-                const heightClass = isSingle ? 'h-72 sm:h-80' : 'h-44'
                 return isVideo ? (
                   <video
                     key={index}
                     src={url}
                     controls
-                    className={`w-full ${heightClass}`}
-                    style={{ objectFit: 'contain', backgroundColor: '#000', display: 'block' }}
+                    className='w-full'
+                    style={{
+                      objectFit: 'contain',
+                      backgroundColor: '#000',
+                      display: 'block',
+                      maxHeight: isSingle ? 560 : 280,
+                    }}
                   />
                 ) : (
-                  <img key={index} src={url} className={`w-full ${heightClass} object-cover`} alt='Post media' />
+                  <img
+                    key={index}
+                    src={url}
+                    alt='Post media'
+                    className='w-full'
+                    style={{
+                      objectFit: 'contain',
+                      backgroundColor: '#000',
+                      display: 'block',
+                      maxHeight: isSingle ? 560 : 280,
+                    }}
+                  />
                 )
               })}
             </div>

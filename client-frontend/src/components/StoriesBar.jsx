@@ -87,13 +87,18 @@ const StoriesBar = () => {
                                         padding: 2.5,
                                     }}
                                 >
-                                    <div
+                                     <div
                                         className='w-full h-full rounded-full overflow-hidden'
                                         style={{ border: '2px solid var(--bg-primary)' }}
                                     >
+                                        {/* Show story preview image for image-type stories, else profile pic */}
                                         <img
-                                            src={user?.profile_picture ||
-                                                `https://ui-avatars.com/api/?name=${name}&background=16a34a&color=fff&size=80`}
+                                            src={
+                                                (latestStory?.media_type === 'image' && latestStory?.media_url)
+                                                    ? latestStory.media_url
+                                                    : (user?.profile_picture ||
+                                                        `https://ui-avatars.com/api/?name=${name}&background=16a34a&color=fff&size=80`)
+                                            }
                                             alt={name}
                                             className='w-full h-full object-cover'
                                         />
