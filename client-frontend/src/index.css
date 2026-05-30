@@ -1,0 +1,79 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+
+* {
+  font-family: "Outfit", sans-serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Dark Mode CSS Variables ─── */
+:root {
+  --bg-primary:    #f8fafc;
+  --bg-secondary:  #ffffff;
+  --bg-card:       #ffffff;
+  --bg-sidebar:    #ffffff;
+  --bg-input:      #f1f5f9;
+  --text-primary:  #0f172a;
+  --text-secondary:#475569;
+  --text-muted:    #94a3b8;
+  --border-color:  #e2e8f0;
+  --shadow-color:  rgba(0,0,0,0.06);
+  --accent:        #16a34a;
+}
+
+html.dark {
+  --bg-primary:    #0f172a;
+  --bg-secondary:  #1e293b;
+  --bg-card:       #1e293b;
+  --bg-sidebar:    #1e293b;
+  --bg-input:      #334155;
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #64748b;
+  --border-color:  #334155;
+  --shadow-color:  rgba(0,0,0,0.3);
+  --accent:        #22c55e;
+}
+
+/* ─── Global dark mode applied to body ─── */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Dark mode utility classes ─── */
+.dark-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark-sidebar {
+  background-color: var(--bg-sidebar);
+  border-color: var(--border-color);
+  transition: background-color 0.3s ease;
+}
+
+.dark-input {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease;
+}
+
+.dark-text {
+  color: var(--text-primary);
+}
+
+.dark-text-secondary {
+  color: var(--text-secondary);
+}
+
+.dark-border {
+  border-color: var(--border-color);
+}

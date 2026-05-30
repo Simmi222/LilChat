@@ -1,0 +1,52 @@
+# Backend - Python
+client-backend/venv/
+client-backend/.venv/
+client-backend/env/
+client-backend/db.sqlite3
+client-backend/__pycache__/
+client-backend/*.pyc
+client-backend/*.pyo
+client-backend/*.pyd
+client-backend/.Python
+client-backend/.env
+client-backend/.env.local
+client-backend/media/
+client-backend/staticfiles/
+
+# Frontend - Node
+client-frontend/node_modules/
+client-frontend/dist/
+client-frontend/build/
+client-frontend/.env.local
+client-frontend/.env.development.local
+client-frontend/.env.test.local
+client-frontend/.env.production.local
+client-frontend/npm-debug.log*
+client-frontend/yarn-debug.log*
+client-frontend/yarn-error.log*
+client-frontend/.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Misc
+.env
+.env.local
+.env.*.local
