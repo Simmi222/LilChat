@@ -136,8 +136,14 @@ USE_I18N = True
 
 USE_TZ = True
 
+# At the end add:
+ALLOWED_HOSTS = ['*']
+CORS_ALLOWED_ORIGINS = ['https://lil-chat-xyet.vercel.app/']
 
-STATIC_URL = 'static/'
+# Static files
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 # Media files configuration
 MEDIA_URL = '/media/'
