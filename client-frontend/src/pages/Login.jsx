@@ -12,17 +12,22 @@ const Login = () => {
       <div className='flex-1 flex flex-col items-start justify-between p-6 md:p-10 lg:pl-40'>
          <h1 className='text-3xl font-bold text-green-600'>lilChat</h1>
         <div>
-          <div className='flex item-center gap-3 mb-4 max-md:mt-10'>      
-            <img src={assets.group_users} alt="group_users" className='h-8 md:h-10' />
-           <div>
-            <div className='flex'>
-              {Array(5).fill().map((_, i) => (<Star key={i} className='size-4 md:size-4.5 text-transparent fill-amber-500' />))}
+          <div className='flex items-center gap-3 mb-4 max-md:mt-10'>
+            <img
+              src={assets.group_users}
+              alt="group_users"
+              className='h-12 md:h-14 w-auto object-contain drop-shadow-md'
+              style={{ borderRadius: '40px' }}
+            />
+            <div>
+              <div className='flex'>
+                {Array(5).fill().map((_, i) => (<Star key={i} className='size-4 md:size-4.5 text-transparent fill-amber-500' />))}
+              </div>
+              <p className='text-sm md:text-base text-green-900 font-medium'>Join 15k+ people already connecting</p>
             </div>
-            <p>Used by 15k developers</p>
-           </div>
           </div>
           <h1 className='text-3xl md:text-6xl md:pb-2 font-bold bg-gradient-to-r from-green-950 to-green-800 bg-clip-text text-transparent'>More than just friends truly connect</h1>
-          <p className='text-xl md:text-3xl text-green-900 max-w-72 md:max-w-md'>connect with global community on pingup.</p>
+          <p className='text-xl md:text-3xl text-green-900 max-w-72 md:max-w-md'>connect with global community on LilChat.</p>
         </div>
         <span className='md:h-10'></span>
       </div>

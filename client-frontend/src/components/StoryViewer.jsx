@@ -82,7 +82,6 @@ const StoryViewer = ({ stories = [], initialIndex = 0, onClose, currentClerkId, 
 
     if (!current) return null
 
-    // Get the best available media URL
     const mediaUrl = current.media_url || current.media || null
 
     const renderContent = () => {
@@ -98,13 +97,11 @@ const StoryViewer = ({ stories = [], initialIndex = 0, onClose, currentClerkId, 
                                 style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain' }}
                             />
                         ) : (
-                            // Fallback when image URL missing (e.g. Cloudinary not configured yet)
                             <div style={{
                                 position:'absolute', inset:0, display:'flex', flexDirection:'column',
                                 alignItems:'center', justifyContent:'center', gap:12,
                                 color:'rgba(255,255,255,0.5)', fontSize:14,
                             }}>
-                                <span style={{ fontSize:48 }}>🖼️</span>
                                 <span>Image unavailable</span>
                             </div>
                         )}
@@ -139,7 +136,6 @@ const StoryViewer = ({ stories = [], initialIndex = 0, onClose, currentClerkId, 
                                 alignItems:'center', justifyContent:'center', gap:12,
                                 color:'rgba(255,255,255,0.5)', fontSize:14,
                             }}>
-                                <span style={{ fontSize:48 }}>🎬</span>
                                 <span>Video unavailable</span>
                             </div>
                         )}

@@ -218,7 +218,7 @@ const CreateStory = () => {
               style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)' }}
             >
               <span className='text-sm' style={{ color: 'var(--text-secondary)' }}>
-                {mediaType === 'image' ? '🖼️ Image' : '🎬 Video'} selected
+                {mediaType === 'image' ? 'Image' : 'Video'} selected
               </span>
               <button
                 onClick={() => { setMedia(null); setMediaType('text') }}

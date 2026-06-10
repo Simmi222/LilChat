@@ -165,9 +165,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICSFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-# -------------------------------------------------------
-# Cloudinary Configuration (for permanent media storage)
-# -------------------------------------------------------
 import cloudinary
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', ''),
@@ -176,13 +173,9 @@ cloudinary.config(
     secure=True,
 )
 
-# Use Cloudinary for media files (prevents files from disappearing on Render restart)
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
 
-# -------------------------------------------------------
-# Upload size limits — allow large image/video file uploads
-# -------------------------------------------------------
-DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024   # 20 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE  = 20 * 1024 * 1024   # 20 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

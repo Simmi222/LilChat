@@ -8,6 +8,7 @@ from .models import Story
 from .serializers import StorySerializer
 from users.models import User
 
+
 class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
@@ -19,7 +20,6 @@ class StoryViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        # Get user from clerk_id if unauthenticated
         user = self.request.user
         if not user.is_authenticated:
             clerk_id = self.request.data.get('clerk_id')
@@ -34,10 +34,8 @@ class StoryViewSet(viewsets.ModelViewSet):
                 raise ValidationError('clerk_id required for unauthenticated requests')
 
         expires_at = timezone.now() + timedelta(hours=24)
-
-        # Handle both file uploads and data URLs for backward compatibility
-        media_file = self.request.FILES.get('media')  # New: for file uploads
-        media_url = self.request.data.get('media_url', '')  # Legacy: for data URLs
+        media_file = self.request.FILES.get('media')
+        media_url = self.request.data.get('media_url', '')
         media_type = self.request.data.get('media_type', 'text')
         background_color = self.request.data.get('background_color', '#4f46e5')
         content = self.request.data.get('content', '')
@@ -45,17 +43,15 @@ class StoryViewSet(viewsets.ModelViewSet):
         serializer.save(
             user=user,
             expires_at=expires_at,
-            media=media_file,  # New: file upload
-            media_url=media_url,  # Legacy: data URLs
+            media=media_file,
+            media_url=media_url,
             media_type=media_type,
             background_color=background_color,
             content=content,
         )
 
     def destroy(self, request, *args, **kwargs):
-        """Delete a story — verifies ownership via clerk_id query param"""
         story = self.get_object()
-        # Try to get user from session or clerk_id query param
         user = request.user
         if not user.is_authenticated:
             clerk_id = request.query_params.get('clerk_id') or request.data.get('clerk_id')
@@ -73,7 +69,6 @@ class StoryViewSet(viewsets.ModelViewSet):
         story.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # GET /api/stories/following/ - Get stories from following users + own stories
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def following(self, request):
         now = timezone.now()
@@ -84,7 +79,6 @@ class StoryViewSet(viewsets.ModelViewSet):
                 expires_at__gt=now
             ).order_by('-created_at')
         else:
-            # For unauthenticated users (clerk_id based), try to include own stories too
             clerk_id = request.query_params.get('clerk_id')
             if clerk_id:
                 try:
@@ -102,7 +96,6 @@ class StoryViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(stories, many=True)
         return Response(serializer.data)
 
-    # POST /api/stories/{id}/view/ - Mark story as viewed
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
         story = self.get_object()
