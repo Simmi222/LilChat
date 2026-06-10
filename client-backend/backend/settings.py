@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'rest_framework',
     'corsheaders',
+    'cloudinary_storage',
+    'cloudinary',
     'users',
     'posts',
     'chat',
@@ -161,12 +163,22 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATICSFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
+# -------------------------------------------------------
+# Cloudinary Configuration (for permanent media storage)
+# -------------------------------------------------------
+import cloudinary
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    api_key=os.getenv('CLOUDINARY_API_KEY', ''),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET', ''),
+    secure=True,
+)
 
-# Media files configuration
+# Use Cloudinary for media files (prevents files from disappearing on Render restart)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------------------------------------
 # Upload size limits — allow large image/video file uploads
