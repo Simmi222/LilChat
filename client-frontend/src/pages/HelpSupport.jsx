@@ -12,7 +12,7 @@ import {
 import toast from 'react-hot-toast'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
 const SYSTEM_PROMPT = `You are a helpful and friendly support assistant for lilChat — a social media app.
 lilChat features: posts, stories (24hr), direct messaging, connections (followers/following), discover people, dark/light mode, profile editing.
