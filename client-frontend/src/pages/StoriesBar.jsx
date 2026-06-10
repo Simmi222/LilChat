@@ -48,7 +48,7 @@ const StoriesBar = () => {
                             )}
 
                             {/* Timestamp */}
-                            <p className='text-white absolute bottom-1 right-2 z-20 text-xs drop-shadow-md'>{moment(story.createdAt).fromNow()}</p>
+                            <p className='text-white absolute bottom-1 right-2 z-20 text-xs drop-shadow-md'>{moment(story.created_at).fromNow()}</p>
 
                             {/* Media Background */}
                             {
