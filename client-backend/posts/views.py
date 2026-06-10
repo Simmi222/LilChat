@@ -91,7 +91,6 @@ class PostViewSet(viewsets.ModelViewSet):
             raise ValidationError('clerk_id required')
         serializer.save(user=user)
 
-    # POST /api/posts/{id}/like/
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
         post = self.get_object()
@@ -105,7 +104,6 @@ class PostViewSet(viewsets.ModelViewSet):
         post.save()
         return Response({'status': 'liked', 'likes_count': post.likes_count})
 
-    # POST /api/posts/{id}/unlike/
     @action(detail=True, methods=['post'])
     def unlike(self, request, pk=None):
         post = self.get_object()
@@ -117,7 +115,6 @@ class PostViewSet(viewsets.ModelViewSet):
         post.save()
         return Response({'status': 'unliked', 'likes_count': post.likes_count})
 
-    # GET /api/posts/feed/
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def feed(self, request):
         current_user = get_user_from_request(request)
@@ -133,7 +130,6 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(posts, many=True)
         return Response(serializer.data)
 
-    # GET /api/posts/{id}/comments/
     @action(detail=True, methods=['get'], permission_classes=[AllowAny])
     def comments(self, request, pk=None):
         post = self.get_object()
@@ -141,7 +137,6 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
-    # POST /api/posts/{id}/comments/create/
     @action(detail=True, methods=['post'], permission_classes=[AllowAny], url_path='comments/create')
     def create_comment(self, request, pk=None):
         post = self.get_object()
@@ -154,7 +149,6 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # DELETE /api/posts/{id}/delete_post/?clerk_id=xxx
     @action(detail=True, methods=['delete'], permission_classes=[AllowAny], url_path='delete_post')
     def delete_post(self, request, pk=None):
         post = self.get_object()
@@ -166,7 +160,6 @@ class PostViewSet(viewsets.ModelViewSet):
         post.delete()
         return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
 
-    # DELETE /api/posts/{post_id}/delete_comment/{comment_id}/?clerk_id=xxx
     @action(detail=True, methods=['delete'], permission_classes=[AllowAny], url_path='delete_comment/(?P<comment_id>[^/.]+)')
     def delete_comment(self, request, pk=None, comment_id=None):
         post = self.get_object()
@@ -178,8 +171,8 @@ class PostViewSet(viewsets.ModelViewSet):
         except Comment.DoesNotExist:
             return Response({'error': 'Comment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        is_post_owner    = (post.user == user)     # owner can delete any comment on own post
-        is_comment_owner = (comment.user == user)  # anyone can delete their own comment
+        is_post_owner    = (post.user == user)
+        is_comment_owner = (comment.user == user)
 
         if not is_post_owner and not is_comment_owner:
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)

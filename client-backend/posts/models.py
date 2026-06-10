@@ -3,8 +3,8 @@ from users.models import User
 
 class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    caption = models.TextField(blank=True, default='')  # optional — allow media-only posts
-    image = models.TextField(null=True, blank=True)  # Stores base64 data URL or image URL
+    caption = models.TextField(blank=True, default='')
+    image = models.TextField(null=True, blank=True)
     likes_count = models.IntegerField(default=0)
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

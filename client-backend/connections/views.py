@@ -24,7 +24,6 @@ class ConnectionViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
-    # POST /api/connections/send-request/ - Send connection request
     @action(detail=False, methods=['post'])
     def send_request(self, request):
         to_user_id = request.data.get('to_user_id')
@@ -52,7 +51,6 @@ class ConnectionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(connection)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    # POST /api/connections/{id}/accept/ - Accept connection request
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         connection = self.get_object()
@@ -73,7 +71,6 @@ class ConnectionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(connection)
         return Response(serializer.data)
 
-    # POST /api/connections/{id}/reject/ - Reject connection request
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         connection = self.get_object()
@@ -86,14 +83,12 @@ class ConnectionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(connection)
         return Response(serializer.data)
 
-    # GET /api/connections/pending/ - Get pending connection requests
     @action(detail=False, methods=['get'])
     def pending(self, request):
         connections = Connection.objects.filter(to_user=request.user, status='pending')
         serializer = self.get_serializer(connections, many=True)
         return Response(serializer.data)
 
-    # GET /api/connections/accepted/ - Get accepted connections
     @action(detail=False, methods=['get'])
     def accepted(self, request):
         connections = Connection.objects.filter(status='accepted').filter(

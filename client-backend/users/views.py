@@ -24,7 +24,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         return [AllowAny()]
 
-    # GET + PUT + PATCH /api/users/me/
     @action(detail=False, methods=['get', 'put', 'patch'], permission_classes=[AllowAny])
     def me(self, request):
         user = get_user_from_request(request)
@@ -43,7 +42,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # POST /api/users/sync/ - Sync Clerk user with Django (called after Clerk login)
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def sync(self, request):
         clerk_id = request.data.get('clerk_id')
@@ -67,19 +65,16 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
-    # GET /api/users/{id}/ - Get specific user profile
     def retrieve(self, request, pk=None):
         user = self.get_object()
         serializer = self.get_serializer(user)
         return Response(serializer.data)
 
-    # GET /api/users/ - List all users (for discovery)
     def list(self, request):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    # POST /api/users/{id}/follow/ - Follow a user
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def follow(self, request, pk=None):
         current_user = get_user_from_request(request)
@@ -91,7 +86,6 @@ class UserViewSet(viewsets.ModelViewSet):
         current_user.following.add(user_to_follow)
         return Response({'status': 'followed', 'followers_count': user_to_follow.followers.count()})
 
-    # POST /api/users/{id}/unfollow/ - Unfollow a user
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def unfollow(self, request, pk=None):
         current_user = get_user_from_request(request)

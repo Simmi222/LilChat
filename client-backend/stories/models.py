@@ -14,10 +14,10 @@ class Story(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stories')
     content = models.TextField(null=True, blank=True)
-    media = models.FileField(upload_to=story_media_upload_path, null=True, blank=True)  # New file field
-    media_url = models.TextField(null=True, blank=True)  # Keep for backward compatibility / data URLs
+    media = models.FileField(upload_to=story_media_upload_path, null=True, blank=True)
+    media_url = models.TextField(null=True, blank=True)
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPES, default='text')
-    background_color = models.CharField(max_length=7, default='#4f46e5')  # For text stories
+    background_color = models.CharField(max_length=7, default='#4f46e5')
     views = models.ManyToManyField(User, related_name='viewed_stories', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

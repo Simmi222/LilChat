@@ -16,7 +16,6 @@ def get_user_from_request(request):
         request.data.get('clerk_id')
         or request.query_params.get('clerk_id')
     )
-    # Skip empty strings — frontend may send clerk_id='' when Clerk hasn't loaded
     if clerk_id and str(clerk_id).strip():
         try:
             return User.objects.get(clerk_id=str(clerk_id).strip())
@@ -72,8 +71,6 @@ class ChatViewSet(viewsets.ModelViewSet):
             reply_to=reply_to,
         )
 
-    # GET /api/chats/conversations/?clerk_id=xxx
-    # Returns: list of users + last_message + unread_count per conversation
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def conversations(self, request):
         user = get_user_from_request(request)
@@ -119,7 +116,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         result.sort(key=lambda x: x['last_message_at'] or '', reverse=True)
         return Response(result)
 
-    # GET /api/chats/with-user/?user_id=X&clerk_id=xxx
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def with_user(self, request):
         user = get_user_from_request(request)
@@ -150,7 +146,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(chats, many=True)
         return Response(serializer.data)
 
-    # GET /api/chats/unread-count/?clerk_id=xxx
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def unread_count(self, request):
         user = get_user_from_request(request)

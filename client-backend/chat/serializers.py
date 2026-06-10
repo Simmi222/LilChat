@@ -15,11 +15,9 @@ class ReplySerializer(serializers.ModelSerializer):
 class ChatSerializer(serializers.ModelSerializer):
     sender   = UserSerializer(read_only=True)
     receiver = UserSerializer(read_only=True)
-    # Frontend-compatible aliases
     from_user = UserSerializer(source='sender',   read_only=True)
     to_user   = UserSerializer(source='receiver', read_only=True)
     text      = serializers.CharField(source='content', read_only=True)
-    # Nested reply-to message (read-only)
     reply_to  = ReplySerializer(read_only=True)
 
     class Meta:
