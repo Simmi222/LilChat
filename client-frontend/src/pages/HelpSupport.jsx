@@ -398,7 +398,8 @@ const BugReportModal = ({ onClose }) => {
       toast.success('Bug report submitted! Thank you 🙏')
     } catch (err) {
       console.error('Bug report error:', err)
-      toast.error('Failed to submit. Please try again.')
+      const errorMsg = err?.text || err?.message || 'Unknown error'
+      toast.error(`Failed to submit: ${errorMsg}`)
     } finally {
       setSending(false)
     }
@@ -485,7 +486,8 @@ const HelpSupport = () => {
       setTimeout(() => setSent(false), 5000)
     } catch (err) {
       console.error('Contact send error:', err)
-      toast.error('Failed to send message. Please try again.')
+      const errorMsg = err?.text || err?.message || 'Unknown error'
+      toast.error(`Failed to send: ${errorMsg}`)
     } finally {
       setSending(false)
     }
