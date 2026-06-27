@@ -117,8 +117,9 @@ const ChatBotModal = ({ onClose }) => {
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
         console.error('Gemini API error:', response.status, JSON.stringify(errData))
-        if (response.status === 429) throw new Error('rate_limit')
-        throw new Error(`API error ${response.status}`)
+        const exactError = errData?.error?.message || `Status ${response.status}`
+        if (response.status === 429) throw new Error(`rate_limit|${exactError}`)
+        throw new Error(`API error: ${exactError}`)
       }
 
       const data = await response.json()
@@ -126,16 +127,17 @@ const ChatBotModal = ({ onClose }) => {
         || "I couldn't understand that. Please try again!"
 
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
-      startCooldown(4) // 4-second cooldown after every successful reply
+      startCooldown(4)
     } catch (err) {
       console.error('Gemini error:', err.message)
-      if (err.message === 'rate_limit') {
-        setMessages(prev => [...prev, { role: 'assistant', text: "⏳ I'm getting too many requests! Please try again in a few minutes." }])
+      if (err.message.startsWith('rate_limit')) {
+        const exactErr = err.message.split('|')[1]
+        setMessages(prev => [...prev, { role: 'assistant', text: `⏳ API Limit Reached: ${exactErr}` }])
         startCooldown(5)
         setThinking(false)
         return
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, something went wrong. Please try again. 🙏" }])
+      setMessages(prev => [...prev, { role: 'assistant', text: `❌ Error: ${err.message}` }])
     } finally {
       setThinking(false)
       isSending.current = false
