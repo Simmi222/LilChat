@@ -379,14 +379,7 @@ const BugReportModal = ({ onClose }) => {
     const bugSubject = `[BUG][${severity}] ${category}`
     const bugMessage = `Category: ${category}\nSeverity: ${severity}\n\nDescription:\n${description}${steps.trim() ? `\n\nSteps to Reproduce:\n${steps}` : ''}`
     try {
-      // 1️⃣ Save to PostgreSQL
-      await api.post('/contact/', {
-        name: 'Bug Report',
-        email: '',
-        subject: bugSubject,
-        message: bugMessage,
-      })
-      // 2️⃣ Send email via EmailJS
+      // Send bug report via EmailJS directly (no backend needed)
       await emailjs.send(
         EMAILJS_SERVICE,
         EMAILJS_TEMPLATE,
@@ -471,15 +464,7 @@ const HelpSupport = () => {
     if (!subject.trim() || !message.trim()) { toast.error('Please fill in Subject and Message'); return }
     setSending(true)
     try {
-      // 1️⃣ Save to PostgreSQL database
-      await api.post('/contact/', {
-        name: name.trim() || 'Anonymous',
-        email: email.trim() || '',
-        subject: subject.trim(),
-        message: message.trim(),
-      })
-
-      // 2️⃣ Send email via EmailJS
+      // Send email via EmailJS directly from frontend (no backend needed)
       await emailjs.send(
         EMAILJS_SERVICE,
         EMAILJS_TEMPLATE,
@@ -494,7 +479,6 @@ const HelpSupport = () => {
         },
         EMAILJS_KEY
       )
-
       setSent(true)
       toast.success("Message sent! We'll get back to you soon. 🙏")
       setName(''); setEmail(''); setSubject(''); setMessage('')
