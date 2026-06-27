@@ -130,10 +130,8 @@ const ChatBotModal = ({ onClose }) => {
     } catch (err) {
       console.error('Gemini error:', err.message)
       if (err.message === 'rate_limit') {
-        // Auto-retry after 5 seconds on rate limit
-        setMessages(prev => [...prev, { role: 'assistant', text: "⏳ Too many requests! Auto-retrying in 5 seconds..." }])
+        setMessages(prev => [...prev, { role: 'assistant', text: "⏳ I'm getting too many requests! Please try again in a few minutes." }])
         startCooldown(5)
-        setTimeout(() => { isSending.current = false; sendMessage(text) }, 5000)
         setThinking(false)
         return
       }
