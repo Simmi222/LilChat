@@ -12,7 +12,7 @@ import {
 import toast from 'react-hot-toast'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
 
 const SYSTEM_PROMPT = `You are a helpful and friendly support assistant for lilChat — a social media app.
 lilChat features: posts, stories (24hr), direct messaging, connections (followers/following), discover people, dark/light mode, profile editing.
@@ -32,8 +32,23 @@ const ChatBotModal = ({ onClose }) => {
   ])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
+  const [cooldown, setCooldown] = useState(0)   // seconds remaining before next message
   const messagesEndRef = React.useRef(null)
-  const isSending = React.useRef(false)  // hard lock — prevents double/triple sends
+  const isSending = React.useRef(false)          // hard lock — prevents double/triple sends
+  const cooldownRef = React.useRef(null)
+
+  // Start a visual N-second cooldown
+  const startCooldown = (seconds) => {
+    setCooldown(seconds)
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(cooldownRef.current); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  React.useEffect(() => () => clearInterval(cooldownRef.current), [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -44,7 +59,7 @@ const ChatBotModal = ({ onClose }) => {
   const sendMessage = async (overrideText) => {
     const text = (overrideText !== undefined ? overrideText : input).trim()
     if (!text) return
-    if (isSending.current) return  // hard lock — prevents triple sends
+    if (isSending.current || cooldown > 0) return  // lock + cooldown guard
     isSending.current = true
 
     if (!GEMINI_API_KEY) {
@@ -61,30 +76,23 @@ const ChatBotModal = ({ onClose }) => {
     setThinking(true)
 
     try {
-      // Build Gemini contents array from full message history + new message
-      // Gemini requires strictly alternating user/model roles
-      const history = messages.slice(1) // drop the opening greeting
+      // Keep only last 6 messages to reduce token usage and avoid rate limits
+      const history = messages.slice(1).slice(-6)
       const contents = []
 
       for (const m of history) {
         const geminiRole = m.role === 'assistant' ? 'model' : 'user'
-        // Prepend system prompt to very first user message
         const msgText = (geminiRole === 'user' && contents.length === 0)
           ? `${SYSTEM_PROMPT}\n\n${m.text}`
           : m.text
-        // Skip consecutive same-role messages (safety guard)
         if (contents.length > 0 && contents[contents.length - 1].role === geminiRole) continue
         contents.push({ role: geminiRole, parts: [{ text: msgText }] })
       }
 
-      // Add current user message
       if (contents.length === 0) {
-        // First ever message — include system prompt
         contents.push({ role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\n${text}` }] })
       } else {
-        // Must end with 'model' before adding new 'user'
         if (contents[contents.length - 1].role !== 'model') {
-          // merge into last user if needed (shouldn't happen normally)
           contents[contents.length - 1].parts[0].text += '\n' + text
         } else {
           contents.push({ role: 'user', parts: [{ text }] })
@@ -112,15 +120,21 @@ const ChatBotModal = ({ onClose }) => {
         || "I couldn't understand that. Please try again!"
 
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
+      startCooldown(4) // 4-second cooldown after every successful reply
     } catch (err) {
       console.error('Gemini error:', err.message)
-      const errText = err.message === 'rate_limit'
-        ? "I'm getting too many requests! Please wait a moment and try again. ⏳"
-        : "Sorry, something went wrong. Please try again. 🙏"
-      setMessages(prev => [...prev, { role: 'assistant', text: errText }])
+      if (err.message === 'rate_limit') {
+        // Auto-retry after 5 seconds on rate limit
+        setMessages(prev => [...prev, { role: 'assistant', text: "⏳ Too many requests! Auto-retrying in 5 seconds..." }])
+        startCooldown(5)
+        setTimeout(() => { isSending.current = false; sendMessage(text) }, 5000)
+        setThinking(false)
+        return
+      }
+      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, something went wrong. Please try again. 🙏" }])
     } finally {
       setThinking(false)
-      isSending.current = false  // release lock
+      isSending.current = false
     }
   }
 
@@ -256,12 +270,14 @@ const ChatBotModal = ({ onClose }) => {
             />
             <button
               onClick={sendMessage}
-              disabled={thinking || !input.trim()}
+              disabled={thinking || !input.trim() || cooldown > 0}
               className='w-8 h-8 rounded-lg flex items-center justify-center text-white transition active:scale-95 disabled:opacity-40'
               style={{ backgroundColor: 'var(--accent)' }}>
               {thinking
                 ? <Loader className='w-3.5 h-3.5 animate-spin' />
-                : <Send className='w-3.5 h-3.5' />
+                : cooldown > 0
+                  ? <span className='text-[10px] font-bold'>{cooldown}s</span>
+                  : <Send className='w-3.5 h-3.5' />
               }
             </button>
           </div>
