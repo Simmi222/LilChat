@@ -2,7 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.db.models import Case, When, IntegerField, Value
+from django.db.models import Case, When, IntegerField, Value, F
+from django.db import transaction
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
 from users.models import User
@@ -99,9 +100,11 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         if post.likes.filter(id=user.id).exists():
             return Response({'error': 'Already liked'}, status=status.HTTP_400_BAD_REQUEST)
-        post.likes.add(user)
-        post.likes_count = post.likes.count()
-        post.save()
+        with transaction.atomic():
+            post.likes.add(user)
+            # F() ensures database does the increment atomically — no race condition
+            Post.objects.filter(pk=post.pk).update(likes_count=F('likes_count') + 1)
+            post.refresh_from_db()
         return Response({'status': 'liked', 'likes_count': post.likes_count})
 
     @action(detail=True, methods=['post'])
@@ -110,9 +113,11 @@ class PostViewSet(viewsets.ModelViewSet):
         user = get_user_from_request(request)
         if not user:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-        post.likes.remove(user)
-        post.likes_count = post.likes.count()
-        post.save()
+        with transaction.atomic():
+            post.likes.remove(user)
+            # F() ensures database does the decrement atomically — no race condition
+            Post.objects.filter(pk=post.pk).update(likes_count=F('likes_count') - 1)
+            post.refresh_from_db()
         return Response({'status': 'unliked', 'likes_count': post.likes_count})
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
