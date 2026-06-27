@@ -10,6 +10,12 @@ import {
   Bot, User as UserIcon, Loader, Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import emailjs from '@emailjs/browser'
+import api from '../services/api'
+
+const EMAILJS_SERVICE  = import.meta.env.VITE_EMAILJS_SERVICE_ID
+const EMAILJS_TEMPLATE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAILJS_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
@@ -363,11 +369,46 @@ const BugReportModal = ({ onClose }) => {
   const [description, setDescription] = useState('')
   const [steps, setSteps] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
   const categories = ['Login / Signup', 'Messaging', 'Posts & Stories', 'Profile', 'Connections', 'Dark Mode / Theme', 'Other']
   const severities = [{ label: 'Low', desc: 'Minor issue', color: '#22c55e' }, { label: 'Medium', desc: 'Affects features', color: '#f59e0b' }, { label: 'High', desc: 'App unusable', color: '#ef4444' }]
-  const handleSubmit = () => {
+
+  const handleSubmit = async () => {
     if (!category || !severity || !description.trim()) { toast.error('Please fill in all required fields'); return }
-    setSubmitted(true); toast.success('Bug report submitted! Thank you 🙏')
+    setSending(true)
+    const bugSubject = `[BUG][${severity}] ${category}`
+    const bugMessage = `Category: ${category}\nSeverity: ${severity}\n\nDescription:\n${description}${steps.trim() ? `\n\nSteps to Reproduce:\n${steps}` : ''}`
+    try {
+      // 1️⃣ Save to PostgreSQL
+      await api.post('/contact/', {
+        name: 'Bug Report',
+        email: '',
+        subject: bugSubject,
+        message: bugMessage,
+      })
+      // 2️⃣ Send email via EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE,
+        {
+          from_name:  'lilChat Bug Reporter',
+          from_email: 'bug-report@lilchat.app',
+          title:      bugSubject,
+          subject:    bugSubject,
+          message:    bugMessage,
+          email:      'N/A',
+          name:       'Bug Reporter',
+        },
+        EMAILJS_KEY
+      )
+      setSubmitted(true)
+      toast.success('Bug report submitted! Thank you 🙏')
+    } catch (err) {
+      console.error('Bug report error:', err)
+      toast.error('Failed to submit. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4' style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
@@ -390,7 +431,9 @@ const BugReportModal = ({ onClose }) => {
             <div><label className='text-xs font-semibold mb-2 block' style={{ color: 'var(--text-secondary)' }}>Severity <span style={{ color: '#ef4444' }}>*</span></label><div className='grid grid-cols-3 gap-2'>{severities.map(({ label, desc, color }) => (<button key={label} onClick={() => setSeverity(label)} className='rounded-xl p-3 text-left border-2 transition-all' style={{ borderColor: severity === label ? color : 'var(--border-color)', backgroundColor: severity === label ? `${color}15` : 'var(--bg-input)' }}><div className='w-2 h-2 rounded-full mb-1.5' style={{ backgroundColor: color }} /><p className='text-xs font-bold' style={{ color: severity === label ? color : 'var(--text-primary)' }}>{label}</p><p className='text-[10px] mt-0.5' style={{ color: 'var(--text-muted)' }}>{desc}</p></button>))}</div></div>
             <div><label className='text-xs font-semibold mb-1.5 block' style={{ color: 'var(--text-secondary)' }}>What happened? <span style={{ color: '#ef4444' }}>*</span></label><textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder='Describe the bug clearly...' className='w-full rounded-xl px-4 py-3 text-sm outline-none resize-none' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
             <div><label className='text-xs font-semibold mb-1.5 block' style={{ color: 'var(--text-secondary)' }}>Steps to reproduce <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label><textarea value={steps} onChange={e => setSteps(e.target.value)} rows={2} placeholder='1. Go to...  2. Click on...  3. See error...' className='w-full rounded-xl px-4 py-3 text-sm outline-none resize-none' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
-            <button onClick={handleSubmit} className='w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-white transition active:scale-[0.99]' style={{ backgroundColor: '#f59e0b' }}><Bug className='w-4 h-4' />Submit Bug Report</button>
+            <button onClick={handleSubmit} disabled={sending} className='w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-white transition active:scale-[0.99] disabled:opacity-60' style={{ backgroundColor: '#f59e0b' }}>
+              {sending ? <><Loader className='w-4 h-4 animate-spin' />Submitting...</> : <><Bug className='w-4 h-4' />Submit Bug Report</>}
+            </button>
           </div>
         )}
       </div>
@@ -416,17 +459,52 @@ const faqs = [
 const HelpSupport = () => {
   const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState(null)
+  const [name, setName]       = useState('')
+  const [email, setEmail]     = useState('')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
-  const [sent, setSent] = useState(false)
-  const [modal, setModal] = useState(null)
+  const [sent, setSent]       = useState(false)
+  const [sending, setSending] = useState(false)
+  const [modal, setModal]     = useState(null)
 
-  const handleSend = () => {
-    if (!subject.trim() || !message.trim()) { toast.error('Please fill in both fields'); return }
-    setSent(true)
-    toast.success("Message sent! We'll get back to you soon.")
-    setSubject(''); setMessage('')
-    setTimeout(() => setSent(false), 4000)
+  const handleSend = async () => {
+    if (!subject.trim() || !message.trim()) { toast.error('Please fill in Subject and Message'); return }
+    setSending(true)
+    try {
+      // 1️⃣ Save to PostgreSQL database
+      await api.post('/contact/', {
+        name: name.trim() || 'Anonymous',
+        email: email.trim() || '',
+        subject: subject.trim(),
+        message: message.trim(),
+      })
+
+      // 2️⃣ Send email via EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE,
+        {
+          from_name:  name.trim()    || 'Anonymous',
+          from_email: email.trim()   || 'Not provided',
+          title:      subject.trim(),
+          subject:    subject.trim(),
+          message:    message.trim(),
+          email:      email.trim()   || 'Not provided',
+          name:       name.trim()    || 'Anonymous',
+        },
+        EMAILJS_KEY
+      )
+
+      setSent(true)
+      toast.success("Message sent! We'll get back to you soon. 🙏")
+      setName(''); setEmail(''); setSubject(''); setMessage('')
+      setTimeout(() => setSent(false), 5000)
+    } catch (err) {
+      console.error('Contact send error:', err)
+      toast.error('Failed to send message. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const quickActions = [
@@ -512,9 +590,15 @@ const HelpSupport = () => {
             </div>
           ) : (
             <div className='space-y-3'>
-              <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Subject</label><input type='text' value={subject} onChange={e => setSubject(e.target.value)} placeholder='What do you need help with?' className='w-full rounded-xl px-4 py-3 text-sm outline-none transition' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
-              <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Message</label><textarea value={message} onChange={e => setMessage(e.target.value)} placeholder='Describe your issue or question...' rows={4} className='w-full rounded-xl px-4 py-3 text-sm outline-none transition resize-none' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
-              <button onClick={handleSend} className='w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] text-white' style={{ backgroundColor: 'var(--accent)' }}><Send className='w-4 h-4' />Send Message</button>
+              <div className='grid grid-cols-2 gap-3'>
+                <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Your Name <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label><input type='text' value={name} onChange={e => setName(e.target.value)} placeholder='Simaran' className='w-full rounded-xl px-4 py-3 text-sm outline-none transition' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
+                <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Your Email <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label><input type='email' value={email} onChange={e => setEmail(e.target.value)} placeholder='you@gmail.com' className='w-full rounded-xl px-4 py-3 text-sm outline-none transition' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
+              </div>
+              <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Subject <span style={{ color: '#ef4444' }}>*</span></label><input type='text' value={subject} onChange={e => setSubject(e.target.value)} placeholder='What do you need help with?' className='w-full rounded-xl px-4 py-3 text-sm outline-none transition' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
+              <div><label className='text-xs font-medium mb-1 block' style={{ color: 'var(--text-secondary)' }}>Message <span style={{ color: '#ef4444' }}>*</span></label><textarea value={message} onChange={e => setMessage(e.target.value)} placeholder='Describe your issue or question...' rows={4} className='w-full rounded-xl px-4 py-3 text-sm outline-none transition resize-none' style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }} /></div>
+              <button onClick={handleSend} disabled={sending} className='w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] text-white disabled:opacity-60' style={{ backgroundColor: 'var(--accent)' }}>
+                {sending ? <><Loader className='w-4 h-4 animate-spin' />Sending...</> : <><Send className='w-4 h-4' />Send Message</>}
+              </button>
             </div>
           )}
         </div>
