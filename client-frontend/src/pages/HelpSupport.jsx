@@ -131,13 +131,12 @@ const ChatBotModal = ({ onClose }) => {
     } catch (err) {
       console.error('Gemini error:', err.message)
       if (err.message.startsWith('rate_limit')) {
-        const exactErr = err.message.split('|')[1]
-        setMessages(prev => [...prev, { role: 'assistant', text: `⏳ API Limit Reached: ${exactErr}` }])
+        setMessages(prev => [...prev, { role: 'assistant', text: "🤖 Sorry, our AI is currently at maximum capacity! Please check back later." }])
         startCooldown(5)
         setThinking(false)
         return
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: `❌ Error: ${err.message}` }])
+      setMessages(prev => [...prev, { role: 'assistant', text: "❌ Sorry, something went wrong. Please try again. 🙏" }])
     } finally {
       setThinking(false)
       isSending.current = false
