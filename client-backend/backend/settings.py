@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'chat',
     'connections',
     'stories',
+    'contact',
 ]
 
 MIDDLEWARE = [

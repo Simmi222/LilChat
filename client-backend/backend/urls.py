@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/', include('chat.urls')),
     path('api/', include('stories.urls')),
     path('api/', include('connections.urls')),
+    path('api/contact/', include('contact.urls')),
 ]
 
 # Serve media files in development
