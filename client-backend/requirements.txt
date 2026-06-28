@@ -13,3 +13,4 @@ python-dateutil==2.9.0.post0
 asgiref==3.8.1
 cloudinary==1.41.0
 django-cloudinary-storage==0.3.0
+openai>=1.0.0

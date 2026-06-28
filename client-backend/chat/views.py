@@ -1,5 +1,6 @@
+import os
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Q, Max, OuterRef, Subquery
@@ -153,3 +154,71 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response({'unread_count': 0})
         unread = Chat.objects.filter(receiver=user, is_read=False).count()
         return Response({'unread_count': unread})
+
+
+SYSTEM_PROMPT = (
+    "You are a helpful and friendly support assistant for lilChat — a social media app.\n"
+    "lilChat features: posts, stories (24hr), direct messaging, connections (followers/following), "
+    "discover people, dark/light mode, profile editing.\n"
+    "Keep your answers short, friendly, and to the point. Use emojis occasionally.\n"
+    "If asked something unrelated to lilChat or general tech/social media support, "
+    "politely say you can only help with lilChat.\n"
+    "Always respond in the same language the user writes in (Hindi or English)."
+)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chatbot_view(request):
+    """Proxy chatbot requests to Groq (LLaMA 3.3 70B) via OpenAI-compatible SDK."""
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    if not groq_api_key:
+        return Response(
+            {'reply': '⚠️ AI is not configured on the server. Please contact admin.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+    user_message = request.data.get('message', '').strip()
+    history = request.data.get('history', [])   # [{"role": "user"|"assistant", "content": "..."}]
+
+    if not user_message:
+        return Response({'reply': ''}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=groq_api_key,
+            base_url='https://api.groq.com/openai/v1'
+        )
+
+        # Build message list: system + trimmed history + current user message
+        messages = [{'role': 'system', 'content': SYSTEM_PROMPT}]
+        # Keep last 6 turns to stay within token limits
+        for turn in history[-6:]:
+            role = turn.get('role')
+            content = turn.get('content', '')
+            if role in ('user', 'assistant') and content:
+                messages.append({'role': role, 'content': content})
+        messages.append({'role': 'user', 'content': user_message})
+
+        completion = client.chat.completions.create(
+            model='llama-3.3-70b-versatile',
+            messages=messages,
+            temperature=0.7,
+            max_tokens=600,
+        )
+
+        reply = completion.choices[0].message.content
+        return Response({'reply': reply})
+
+    except Exception as e:
+        error_str = str(e).lower()
+        if 'rate_limit' in error_str or '429' in error_str:
+            return Response(
+                {'reply': '🤖 Sorry, our AI is currently at maximum capacity! Please try again in a moment.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        return Response(
+            {'reply': '❌ Sorry, something went wrong. Please try again. 🙏'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

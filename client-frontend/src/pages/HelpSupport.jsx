@@ -17,14 +17,7 @@ const EMAILJS_SERVICE  = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const EMAILJS_TEMPLATE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
 const EMAILJS_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
 
-const SYSTEM_PROMPT = `You are a helpful and friendly support assistant for lilChat — a social media app.
-lilChat features: posts, stories (24hr), direct messaging, connections (followers/following), discover people, dark/light mode, profile editing.
-Keep your answers short, friendly, and to the point. Use emojis occasionally. 
-If asked something unrelated to lilChat or general tech/social media support, politely say you can only help with lilChat.
-Always respond in the same language the user writes in (Hindi or English).`
 
 /* ─────────────────────────────────────────────
    AI CHATBOT MODAL
@@ -33,7 +26,7 @@ const ChatBotModal = ({ onClose }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: "Hi! 👋 I'm lilChat's AI assistant powered by Gemini. How can I help you today?"
+      text: "Hi! 👋 I'm lilChat's AI assistant powered by LLaMA 3.3. How can I help you today?"
     }
   ])
   const [input, setInput] = useState('')
@@ -68,75 +61,34 @@ const ChatBotModal = ({ onClose }) => {
     if (isSending.current || cooldown > 0) return  // lock + cooldown guard
     isSending.current = true
 
-    if (!GEMINI_API_KEY) {
-      setMessages(prev => [...prev,
-        { role: 'user', text },
-        { role: 'assistant', text: '⚠️ AI is not configured. Please add VITE_GEMINI_API_KEY to your .env file.' }
-      ])
-      isSending.current = false
-      return
-    }
-
     setMessages(prev => [...prev, { role: 'user', text }])
     setInput('')
     setThinking(true)
 
     try {
-      // Keep only last 6 messages to reduce token usage and avoid rate limits
-      const history = messages.slice(1).slice(-6)
-      const contents = []
+      // Build history from current messages (exclude the initial greeting)
+      const history = messages.slice(1).map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.text
+      }))
 
-      for (const m of history) {
-        const geminiRole = m.role === 'assistant' ? 'model' : 'user'
-        const msgText = (geminiRole === 'user' && contents.length === 0)
-          ? `${SYSTEM_PROMPT}\n\n${m.text}`
-          : m.text
-        if (contents.length > 0 && contents[contents.length - 1].role === geminiRole) continue
-        contents.push({ role: geminiRole, parts: [{ text: msgText }] })
-      }
-
-      if (contents.length === 0) {
-        contents.push({ role: 'user', parts: [{ text: `${SYSTEM_PROMPT}\n\n${text}` }] })
-      } else {
-        if (contents[contents.length - 1].role !== 'model') {
-          contents[contents.length - 1].parts[0].text += '\n' + text
-        } else {
-          contents.push({ role: 'user', parts: [{ text }] })
-        }
-      }
-
-      const response = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 600 }
-        })
+      const response = await api.post('/chatbot/', {
+        message: text,
+        history
       })
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        console.error('Gemini API error:', response.status, JSON.stringify(errData))
-        const exactError = errData?.error?.message || `Status ${response.status}`
-        if (response.status === 429) throw new Error(`rate_limit|${exactError}`)
-        throw new Error(`API error: ${exactError}`)
-      }
-
-      const data = await response.json()
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
-        || "I couldn't understand that. Please try again!"
-
+      const reply = response.data?.reply || "I couldn't understand that. Please try again!"
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
-      startCooldown(4)
+      startCooldown(3)
     } catch (err) {
-      console.error('Gemini error:', err.message)
-      if (err.message.startsWith('rate_limit')) {
-        setMessages(prev => [...prev, { role: 'assistant', text: "🤖 Sorry, our AI is currently at maximum capacity! Please check back later." }])
+      console.error('Chatbot error:', err)
+      const status = err.response?.status
+      if (status === 429) {
+        setMessages(prev => [...prev, { role: 'assistant', text: '🤖 Sorry, our AI is currently at maximum capacity! Please try again in a moment.' }])
         startCooldown(5)
-        setThinking(false)
-        return
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', text: '❌ Sorry, something went wrong. Please try again. 🙏' }])
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: "❌ Sorry, something went wrong. Please try again. 🙏" }])
     } finally {
       setThinking(false)
       isSending.current = false
