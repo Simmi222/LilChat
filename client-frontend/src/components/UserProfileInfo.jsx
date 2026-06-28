@@ -1,12 +1,14 @@
-import { Calendar, MapPin, PenBox, Verified, UserPlus, UserCheck, Loader } from 'lucide-react'
+import { Calendar, MapPin, PenBox, Verified, UserPlus, UserCheck, MessageSquare, Loader } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
 import moment from 'moment'
 import { useUser } from '@clerk/react'
+import { useNavigate } from 'react-router-dom'
 import { usersAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
 const UserProfileInfo = ({ user, posts, profileId, setShowEdit, onProfileUpdate, onStatClick, activeSection }) => {
   const { user: clerkUser } = useUser()
+  const navigate = useNavigate()
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
   const [followerCount, setFollowerCount] = useState(user.followers_count || 0)
@@ -85,7 +87,7 @@ const UserProfileInfo = ({ user, posts, profileId, setShowEdit, onProfileUpdate,
                 </p>
               </div>
 
-              {/* Edit / Follow button */}
+              {/* Edit / Follow + Message buttons */}
               <div className='flex items-center gap-2 mt-4 md:mt-0'>
                 {isOwnProfile ? (
                   <button
@@ -101,22 +103,36 @@ const UserProfileInfo = ({ user, posts, profileId, setShowEdit, onProfileUpdate,
                     Edit Profile
                   </button>
                 ) : (
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={followLoading}
-                    className='flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-sm transition-all active:scale-95 disabled:opacity-60'
-                    style={isFollowing
-                      ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }
-                      : { backgroundColor: 'var(--accent)', color: '#fff' }
-                    }
-                  >
-                    {followLoading
-                      ? <Loader className='w-4 h-4 animate-spin' />
-                      : isFollowing
-                        ? <><UserCheck className='w-4 h-4' /> Following</>
-                        : <><UserPlus className='w-4 h-4' /> Follow</>
-                    }
-                  </button>
+                  <>
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className='flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-sm transition-all active:scale-95 disabled:opacity-60'
+                      style={isFollowing
+                        ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }
+                        : { backgroundColor: 'var(--accent)', color: '#fff' }
+                      }
+                    >
+                      {followLoading
+                        ? <Loader className='w-4 h-4 animate-spin' />
+                        : isFollowing
+                          ? <><UserCheck className='w-4 h-4' /> Following</>
+                          : <><UserPlus className='w-4 h-4' /> Follow</>
+                      }
+                    </button>
+                    <button
+                      onClick={() => navigate(`/messages/${user.id}`)}
+                      className='flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all active:scale-95'
+                      style={{
+                        backgroundColor: 'var(--bg-input)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)'
+                      }}
+                    >
+                      <MessageSquare className='w-4 h-4' />
+                      Message
+                    </button>
+                  </>
                 )}
               </div>
             </div>

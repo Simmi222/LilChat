@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { Search, MapPin, UserPlus, MessageSquare, Loader } from 'lucide-react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { Search, MapPin, UserPlus, UserCheck, MessageSquare, Loader } from 'lucide-react'
 import { usersAPI } from '../services/api'
 import { useUser } from '@clerk/react'
 import { useNavigate } from 'react-router-dom'
@@ -19,6 +19,20 @@ const Discover = () => {
       const response = await usersAPI.getAllUsers()
       const users = Array.isArray(response.data) ? response.data : []
       setAllUsers(users)
+
+      // ── Fetch follow state for each user so button is accurate after login ──
+      if (clerkUser?.id && users.length > 0) {
+        const results = await Promise.allSettled(
+          users.map(u => usersAPI.isFollowing(u.id, clerkUser.id))
+        )
+        const followed = new Set()
+        results.forEach((r, i) => {
+          if (r.status === 'fulfilled' && r.value.data?.is_following) {
+            followed.add(users[i].id)
+          }
+        })
+        setFollowedUsers(followed)
+      }
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Failed to load users')
@@ -27,7 +41,7 @@ const Discover = () => {
     }
   }
 
-  useEffect(() => { fetchUsers() }, [])
+  useEffect(() => { fetchUsers() }, [clerkUser?.id])
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return allUsers
@@ -179,11 +193,11 @@ const Discover = () => {
                       onClick={() => toggleFollow(user.id)}
                       className='flex-1 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1 active:scale-95'
                       style={followedUsers.has(user.id)
-                        ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }
+                        ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }
                         : { backgroundColor: 'var(--accent)', color: '#fff' }
                       }
                     >
-                      <UserPlus size={13} />
+                      {followedUsers.has(user.id) ? <UserCheck size={13} /> : <UserPlus size={13} />}
                       {followedUsers.has(user.id) ? 'Following' : 'Follow'}
                     </button>
                     <button
