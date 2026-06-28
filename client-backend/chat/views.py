@@ -170,7 +170,10 @@ SYSTEM_PROMPT = (
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def chatbot_view(request):
-    """Proxy chatbot requests to Groq (LLaMA 3.3 70B) via OpenAI-compatible SDK."""
+    """Proxy chatbot requests to Groq (LLaMA 3.3 70B) via direct HTTP request."""
+    import requests as http_requests
+    import traceback
+
     groq_api_key = os.environ.get('GROQ_API_KEY')
     if not groq_api_key:
         return Response(
@@ -185,12 +188,6 @@ def chatbot_view(request):
         return Response({'reply': ''}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        from openai import OpenAI
-        client = OpenAI(
-            api_key=groq_api_key,
-            base_url='https://api.groq.com/openai/v1'
-        )
-
         # Build message list: system + trimmed history + current user message
         messages = [{'role': 'system', 'content': SYSTEM_PROMPT}]
         # Keep last 6 turns to stay within token limits
@@ -201,24 +198,43 @@ def chatbot_view(request):
                 messages.append({'role': role, 'content': content})
         messages.append({'role': 'user', 'content': user_message})
 
-        completion = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=messages,
-            temperature=0.7,
-            max_tokens=600,
+        resp = http_requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {groq_api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': messages,
+                'temperature': 0.7,
+                'max_tokens': 600,
+            },
+            timeout=30,
         )
 
-        reply = completion.choices[0].message.content
-        return Response({'reply': reply})
-
-    except Exception as e:
-        error_str = str(e).lower()
-        if 'rate_limit' in error_str or '429' in error_str:
+        if resp.status_code == 429:
             return Response(
                 {'reply': '🤖 Sorry, our AI is currently at maximum capacity! Please try again in a moment.'},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
+
+        if not resp.ok:
+            print(f'[chatbot_view] Groq API error {resp.status_code}: {resp.text}')
+            return Response(
+                {'reply': '❌ Sorry, something went wrong. Please try again. 🙏'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        data = resp.json()
+        reply = data['choices'][0]['message']['content']
+        return Response({'reply': reply})
+
+    except Exception as e:
+        print(f'[chatbot_view] Exception: {e}')
+        traceback.print_exc()
         return Response(
             {'reply': '❌ Sorry, something went wrong. Please try again. 🙏'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
